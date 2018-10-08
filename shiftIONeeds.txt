@@ -1,0 +1,22 @@
+4 thresh pots
+4 divider/prob pots
+1 span pot
+1 feedback-tap in pot
+1 feedback-tap out
+1 feedbac mix pot
+
+
+4 sample outs
+1 sample in
+
+4 clock outs
+
+1 trig in
+
+1 divider/prob switch
+1 span mode switch
+
+12 scale buttons
+1 scale mask rotation cv
+octave shifting?
+learn scale via quantize switch?
