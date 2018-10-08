@@ -21,6 +21,7 @@
 * Gate Output
   * 1 Threshold Pot per Tap
   * 1 Threshold CV per Tap (positive voltages are > comparison, negative voltages are < comparison)
+  * 1 Gate Output per Tap
 
 * CV Output
   * 1 CV Output per Tap
