@@ -1,5 +1,5 @@
 # shiftRegister
-Spanning Shift Register with Quantizer, Independent Holds and Gate Output
+Spanning Shift Register with Adjustable Feedback, Quantizer, Independent Tap Holds and Gate Output
 
 ## To Do
 
