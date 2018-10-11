@@ -54,5 +54,7 @@ void updateClockDividerHolds(shiftRegister * registerToUpdate);
 
 void updateStochasticHolds(shiftRegister * registerToUpdate);
 
+int rand_lim(int limit);
+
 
 #endif

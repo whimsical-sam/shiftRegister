@@ -1,5 +1,4 @@
 #include "registers.h"
-#include "utility.h"
 #define TRUE 1
 #define FALSE 0
 
@@ -37,7 +36,7 @@ void initRegister(shiftRegister * newRegister, int _numOfTaps, int _numOfStages)
 		newTap->val = 0;
 		newTap->hold = FALSE;
 		newTap->gateThresh = 0.5;
-		newTap->clockDivider = newTap->id+1;
+		newTap->clockDivider = 1;
 		newTap->holdProbability = 0;
 	}
 }
@@ -137,10 +136,24 @@ void updateClockDividerHolds(shiftRegister * registerToUpdate) {
 void updateStochasticHolds(shiftRegister * registerToUpdate) {
 	for (int i = 0; i<registerToUpdate->numOfTaps; i++) {
 		tap * tapToUpdate = &(registerToUpdate->taps[i]);
-		if (rand_limit(99)<tapToUpdate->holdProbability) {
+		if (rand_lim(99)<tapToUpdate->holdProbability) {
 			tapToUpdate->hold=TRUE;
 		} else {
 			tapToUpdate->hold = FALSE;
 		}
 	}
+}
+
+int rand_lim(int limit) {
+/* return a random number between 0 and limit inclusive.
+ */
+
+    int divisor = RAND_MAX/(limit+1);
+    int retval;
+
+    do { 
+        retval = rand() / divisor;
+    } while (retval > limit);
+
+    return retval;
 }

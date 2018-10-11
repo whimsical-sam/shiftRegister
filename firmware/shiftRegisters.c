@@ -20,7 +20,7 @@ void delay(int number_of_seconds)
   
 
 
-void main() {
+void run() {
 	shiftRegister mainRegister;
 	initRegister(&mainRegister,6,64);
 	
@@ -47,3 +47,6 @@ void main() {
 
 
 
+void main() {
+	run();
+}
