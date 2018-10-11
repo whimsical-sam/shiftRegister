@@ -42,6 +42,18 @@
 
 /* USER CODE BEGIN Includes */
 #include <stdlib.h>
+#include "registers.h"
+
+#define LED1_PORT GPIOA
+#define LED1_PIN GPIO_PIN_6 // Discovery Board A0
+#define LED2_PORT GPIOA
+#define LED2_PIN GPIO_PIN_4 // Discovery Board A1
+#define LED3_PORT GPIOA
+#define LED3_PIN GPIO_PIN_11 // Discovery Board D10
+#define LED4_PORT GPIOC
+#define LED4_PIN GPIO_PIN_6 // Discovery Board D1
+
+
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -49,7 +61,10 @@ ADC_HandleTypeDef hadc1;
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
-uint16_t delayT = 1000;
+uint16_t adcValue = 1000;
+shiftRegister mainRegister;
+int sampleCount = 0;
+int sampleFlag = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -59,7 +74,7 @@ static void MX_ADC1_Init(void);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
-
+void controlLEDBrightness(void);
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
@@ -98,6 +113,11 @@ int main(void)
   MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
 	HAL_ADC_Start(&hadc1);
+	initRegister(&mainRegister,4,160);
+	updateTapHolds(&mainRegister);
+	updateTapLocs(&mainRegister);
+	updateTapVals(&mainRegister);
+	HAL_Delay(1000);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -105,12 +125,24 @@ int main(void)
   while (1)
   {
 		
-		HAL_GPIO_TogglePin(GPIOA,GPIO_PIN_6);
-		HAL_Delay(delayT);
-
 		if (HAL_ADC_PollForConversion(&hadc1,5) == HAL_OK) {
-			delayT = 20+HAL_ADC_GetValue(&hadc1);
+			adcValue = 2*HAL_ADC_GetValue(&hadc1);
 		}
+		
+		if (sampleFlag == 1) {
+			HAL_Delay(1);
+			if (sampleCount == mainRegister.feedOutID+1) mainRegister.feedMix = 1;
+			sampleValue(&mainRegister,adcValue);
+			updateTapHolds(&mainRegister);
+			updateTapLocs(&mainRegister);
+			updateTapVals(&mainRegister);
+			sampleCount++;
+			sampleFlag = 0;
+		}
+		
+		controlLEDBrightness();
+		
+		
 		
   /* USER CODE END WHILE */
 
@@ -240,21 +272,41 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOA_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, GPIO_PIN_RESET);
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, GPIO_PIN_SET);  // make sure potentiometer has voltage reference
-
-  /*Configure GPIO pin : PA4 */ // Unused
-  GPIO_InitStruct.Pin = GPIO_PIN_4;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : PA6 */ // A0 on discovery, toggles LED
-  GPIO_InitStruct.Pin = GPIO_PIN_6;
+  HAL_GPIO_WritePin(LED1_PORT, LED1_PIN, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(LED2_PORT, LED2_PIN, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(LED3_PORT, LED3_PIN, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(LED4_PORT, LED4_PIN, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_12, GPIO_PIN_SET);  // make sure potentiometer has voltage reference
+	
+	/*Configure GPIO pin : LED1 */ // A0 on discovery, toggles LED
+  GPIO_InitStruct.Pin = LED1_PIN;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+  HAL_GPIO_Init(LED1_PORT, &GPIO_InitStruct);
+	
+  /*Configure GPIO pin : LED2*/ // Unused
+  GPIO_InitStruct.Pin = LED2_PIN;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(LED2_PORT, &GPIO_InitStruct);
+	
+	/*Configure GPIO pin : LED3 */ // Unused
+  GPIO_InitStruct.Pin = LED3_PIN;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(LED3_PORT, &GPIO_InitStruct);
+	
+	/*Configure GPIO pin : LED4 */ // Unused
+  GPIO_InitStruct.Pin = LED4_PIN;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(LED4_PORT, &GPIO_InitStruct);;
+
+  
 	
 	/*Configure GPIO pin : PA12 */ // D13 on discovery, provides power to potentiometer
   GPIO_InitStruct.Pin = GPIO_PIN_12;
@@ -266,7 +318,26 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-
+void controlLEDBrightness(void) {
+	HAL_GPIO_WritePin(LED1_PORT,LED1_PIN,GPIO_PIN_SET);
+	HAL_GPIO_WritePin(LED2_PORT,LED2_PIN,GPIO_PIN_SET);
+	HAL_GPIO_WritePin(LED3_PORT,LED3_PIN,GPIO_PIN_SET);
+	HAL_GPIO_WritePin(LED4_PORT,LED4_PIN,GPIO_PIN_SET);
+	for (int i = 0; i<8192; i++) {
+		if (i > mainRegister.taps[0].val) {
+			HAL_GPIO_WritePin(LED1_PORT,LED1_PIN,GPIO_PIN_RESET);
+		}
+		if (i > mainRegister.taps[1].val) {
+			HAL_GPIO_WritePin(LED2_PORT,LED2_PIN,GPIO_PIN_RESET);
+		}
+		if (i > mainRegister.taps[2].val ) {
+			HAL_GPIO_WritePin(LED3_PORT,LED3_PIN,GPIO_PIN_RESET);
+		}
+		if (i > mainRegister.taps[3].val) {
+			HAL_GPIO_WritePin(LED4_PORT,LED4_PIN,GPIO_PIN_RESET);
+		}
+	}
+}
 /* USER CODE END 4 */
 
 /**

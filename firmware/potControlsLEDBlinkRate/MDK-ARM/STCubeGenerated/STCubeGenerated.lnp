@@ -3,6 +3,7 @@
 "stcubegenerated\main.o"
 "stcubegenerated\stm32f7xx_it.o"
 "stcubegenerated\stm32f7xx_hal_msp.o"
+"stcubegenerated\registers.o"
 "stcubegenerated\stm32f7xx_hal_adc.o"
 "stcubegenerated\stm32f7xx_hal_adc_ex.o"
 "stcubegenerated\stm32f7xx_hal_cortex.o"
